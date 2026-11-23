@@ -68,7 +68,9 @@ python anymal_c_contact_estimator/play.py \
 
 Cross-morphology evaluation of the frozen Go1-trained **ContactNet** estimator driving the **ANYmal** PPO locomotion policy (full architecture: marginalized contact belief $b(t) \in [0, 1]^4$ in observations + predictive entropy $\mathcal{H}(t)$ penalty in reward) across progressive incline angles up to $25^\circ$:
 
-https://github.com/Masateemah123/ANYmal-ContactAware-RL/blob/main/figures/R3_contact_aware_locomotion.mp4?raw=true
+![ANYmal Contact-Aware Locomotion Demo](figures/R3_contact_aware_locomotion.gif)
+
+> Full-resolution recording: [`figures/R3_contact_aware_locomotion.mp4`](figures/R3_contact_aware_locomotion.mp4)
 
 | **Trial Summary & Climb Outcome ($25^\circ$)** | **Contact Belief & Entropy Tracking ($25^\circ$)** |
 | :---: | :---: |
