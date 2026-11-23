@@ -2,7 +2,7 @@
 
 > **Status:** Codebase and simulation benchmarks from Master's thesis (*Cross-Morphology Proprioceptive Contact Estimation and Contact-Aware Locomotion*). Manuscript in preparation.
 
-![System Architecture Overview](figures/architecture_overview.jpg)
+![System Architecture Overview](figures/architecture_overview.png)
 
 ---
 
@@ -27,7 +27,7 @@ Rather than relying on physical foot-contact switches or drift-prone base IMU me
 ANYmal-ContactAware-RL/
 ├── README.md
 ├── figures/
-│   └── architecture_overview.jpg          # Closed-loop perception + PPO control diagram
+│   └── architecture_overview.png          # Closed-loop perception + PPO control diagram
 └── anymal_c_contact_estimator/
     ├── __init__.py                        # Isaac Lab Gym task registration
     ├── velocity_env_cfg.py                # Base ManagerBasedRLEnvCfg with proprioceptive & contact-belief obs
