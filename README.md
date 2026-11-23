@@ -64,6 +64,23 @@ python anymal_c_contact_estimator/play.py \
 
 ---
 
-## 4. Related Repository
+
+---
+
+## 4. Incline Locomotion & Contact Belief Benchmarks (Up to $25^\\circ$ Slope)
+
+Cross-morphology evaluation of the frozen Go1-trained **ContactNet** estimator driving the **ANYmal** PPO locomotion policy (full architecture: marginalized contact belief $b(t) \\in [0, 1]^4$ in observations + predictive entropy $\\mathcal{H}(t)$ penalty in reward) across progressive incline angles up to $25^\\circ$:
+
+https://github.com/Masateemah123/ANYmal-ContactAware-RL/blob/main/figures/R3_contact_aware_locomotion.mp4?raw=true
+
+| **Trial Summary & Climb Outcome ($25^\\circ$)** | **Contact Belief & Entropy Tracking ($25^\\circ$)** |
+| :---: | :---: |
+| ![25 deg Trial Summary](figures/ramp25_trial_summary.png) | ![25 deg Contact Belief](figures/ramp25_contact_belief.png) |
+
+| **Gait Phasing & Velocity Tracking ($25^\\circ$)** | **Foothold Slip Analysis ($25^\\circ$)** |
+| :---: | :---: |
+| ![25 deg Gait Diagram](figures/ramp25_gait_diagram.png) | ![25 deg Slip Analysis](figures/ramp25_slip_analysis.png) |
+
+## 5. Related Repository
 
 - **[Masateemah123/ContactNet](https://github.com/Masateemah123/ContactNet):** 48D IMU-free Dilated 1D-CNN + GRU contact estimator trained on Unitree Go1 and validated zero-shot across outdoor terrains and Unitree Go2.
