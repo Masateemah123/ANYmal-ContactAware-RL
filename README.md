@@ -1,19 +1,23 @@
 # Cross-Morphology Contact-Aware Quadruped Locomotion in Isaac Lab
 
-Proprioceptive reinforcement learning locomotion framework developed in **NVIDIA Isaac Lab** that integrates a frozen, IMU-free recurrent contact estimator ([**ContactNet**](https://github.com/Masateemah123/ContactNet)) into the PPO observation pipeline for cross-platform quadruped locomotion (**Unitree Go1**, **ANYmal C**, and **ANYmal D**).
+> **Status:** Codebase and simulation benchmarks from Master's thesis (*Cross-Morphology Proprioceptive Contact Estimation and Contact-Aware Locomotion*). Manuscript in preparation.
+
+![System Architecture Overview](figures/architecture_overview.jpg)
 
 ---
 
-## 1. System Architecture: Frozen Belief-State Perception + PPO Control
+## 1. Closed-Loop Perception & Control Pipeline
 
-Rather than relying on physical foot-contact switches or drift-prone base IMU measurements, the policy runs **ContactNet** online inside the Isaac Lab environment loop:
+Rather than relying on physical foot-contact switches or drift-prone base IMU measurements, this framework embeds a frozen, IMU-free recurrent contact estimator ([**ContactNet**](https://github.com/Masateemah123/ContactNet)) directly inside the **NVIDIA Isaac Lab** reinforcement learning loop:
 
-1. **48D Leg-Local Proprioceptive Frame (`mdp/observations.py`):**
-   Constructs a 48-dimensional proprioceptive vector per step comprising joint positions ($q \in \mathbb{R}^{12}$), joint velocities ($\dot{q} \in \mathbb{R}^{12}$), base-relative foot positions ($p_f^b \in \mathbb{R}^{12}$), and base-frame foot linear velocities ($v_f^b \in \mathbb{R}^{12}$).
-2. **150-Step Rolling Buffer & Bayesian Contact Belief (`mdp/contact_estimator_event.py` & `contact_estimator_wrapper.py`):**
-   Maintains a per-environment rolling history $(N_{\text{envs}}, 150, 48)$ and evaluates the frozen 1D-CNN + GRU estimator to obtain a 16-state discrete posterior belief $b_t \in \Delta^{15}$ over all $2^4$ foot contact configurations, projected via $b_t M$ into continuous per-leg contact probabilities $\hat{\mathbf{c}}_t \in [0, 1]^4$ (`[LF, RF, LH, RH]`) and Shannon belief entropy $H(b_t)$.
-3. **Multi-Robot Policy Configurations (`config/go_1`, `config/anymal_c`, `config/anymal_d`):**
-   Exposes `estimated_contacts` (`(N, 4)`) to the PPO actor across flat and rough terrain curricula, enabling contact-aware locomotion across distinct quadruped morphologies without physical contact sensors.
+1. **Frozen ContactNet (`PCNN-GRU`):**
+   - Consumes a rolling $150$-step ($0.15\text{ s}$) history window $X_t \in \mathbb{R}^{150 \times 48}$ of IMU-free leg-local proprioception: joint angles $q \in \mathbb{R}^{12}$, joint velocities $\dot{q} \in \mathbb{R}^{12}$, base-relative foot positions $p_f \in \mathbb{R}^{12}$, and base-frame foot velocities $v_f \in \mathbb{R}^{12}$.
+   - Outputs $16$-class logits $z \in \mathbb{R}^{16}$ and posterior configuration probabilities $P(S = s_i \mid X_t) \in \mathbb{R}^{16}$.
+2. **Marginalization & Predictive Entropy:**
+   - **Contact Belief Vector (Observation):** Marginalizes the $16$-state posterior into per-foot soft contact probabilities $b_f(t) = P(C_f = 1 \mid X_t) \in [0, 1]^4$ (`[LF, RF, LH, RH]`), appended to the PPO policy observation vector $o(t)$.
+   - **Predictive Entropy (Reward Regularization):** Computes Shannon entropy $\mathcal{H}(t) = -\sum_{i=1}^{16} p_i \log p_i \in [0, \log 16]$ as an epistemic/aleatoric uncertainty signal used **in the reward function only** (uncertainty penalty) to discourage gait states where contact observability degrades.
+3. **PPO Locomotion Policy & Cross-Morphology Actuation:**
+   - Concatenates $b(t) \in \mathbb{R}^4$ with base linear/angular velocities, projected gravity, joint states $(q, \dot{q})$, previous actions, and velocity commands to output $12$-DoF joint target actions $a(t) \in \mathbb{R}^{12}$ across **Unitree Go1**, **ANYmal C**, and **ANYmal D**.
 
 ---
 
@@ -22,10 +26,12 @@ Rather than relying on physical foot-contact switches or drift-prone base IMU me
 ```text
 ANYmal-ContactAware-RL/
 ├── README.md
+├── figures/
+│   └── architecture_overview.jpg          # Closed-loop perception + PPO control diagram
 └── anymal_c_contact_estimator/
-    ├── __init__.py                        # Isaac Lab Gym environment registration
+    ├── __init__.py                        # Isaac Lab Gym task registration
     ├── velocity_env_cfg.py                # Base ManagerBasedRLEnvCfg with proprioceptive & contact-belief obs
-    ├── contact_estimator_wrapper.py       # Frozen ContactNet inference & 16-class marginal belief projection
+    ├── contact_estimator_wrapper.py       # Frozen ContactNet inference, marginalization & Shannon entropy
     ├── play.py                            # Policy evaluation & rollout script
     ├── config/
     │   ├── scene.py                       # Multi-terrain simulation scene configuration
@@ -35,7 +41,7 @@ ANYmal-ContactAware-RL/
     └── mdp/
         ├── observations.py                # 48D proprioceptive builder + estimated_contacts observation term
         ├── contact_estimator_event.py     # Startup init, 150-step rolling buffer update & env reset hooks
-        ├── rewards.py                     # Velocity tracking & gait-regularization reward terms
+        ├── rewards.py                     # Velocity tracking, gait rewards & entropy uncertainty penalty
         ├── terminations.py                # Base/link termination conditions
         ├── curriculums.py                 # Terrain difficulty progression
         ├── metrics.py                     # Contact estimation & locomotion tracking metrics
@@ -53,11 +59,11 @@ export CONTACTNET_SRC=/path/to/ContactNet/src
 export CONTACTNET_CKPT=/path/to/ContactNet/checkpoints/contactnet_48d_epoch19.ckpt
 
 python anymal_c_contact_estimator/play.py \
-    --task Isaac-Velocity-Rough-Anymal-C-ContactEst-v0 --num_envs 32
+    --task Isaac-Velocity-Rough-Anymal-D-ContactEst-v0 --num_envs 32
 ```
 
 ---
 
-## 4. Perception Backbone
+## 4. Related Repository
 
 - **[Masateemah123/ContactNet](https://github.com/Masateemah123/ContactNet):** 48D IMU-free Dilated 1D-CNN + GRU contact estimator trained on Unitree Go1 and validated zero-shot across outdoor terrains and Unitree Go2.
